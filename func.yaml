@@ -3,7 +3,7 @@ name: test
 namespace: ""
 runtime: springboot
 registry: ""
-image: ghcr.io/thomasvitale/test:latest
+image: ghcr.io/thomasvitale/level-3:latest
 imageDigest: ""
 build: local
 git: {}
