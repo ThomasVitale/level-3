@@ -7,7 +7,7 @@ This sample project contains a single function based on Spring Cloud Function: `
 ## Usage
 
 ```shell
-$ http :8080 sessionId="game-blahblah" question1="Awesome"
+$ http http://test.default.34.116.142.221.sslip.io sessionId="game-blahblah" question1="Awesome"
 
 HTTP/1.1 200 OK
 Content-Length: 98

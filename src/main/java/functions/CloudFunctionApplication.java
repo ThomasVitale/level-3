@@ -31,7 +31,7 @@ public class CloudFunctionApplication {
   @Bean
   public Function<Mono<Questions>, Mono<Score>> question(StringRedisTemplate redisTemplate) {
     return questions -> questions
-            .map(this::playLevel)
+            .map(this::scoreLevel)
             .map(tuple -> {
               redisTemplate.opsForValue().set("score-" + tuple.getT1().sessionId(), writeValueAsString(tuple.getT1()));
               redisTemplate.opsForValue().set(tuple.getT2().gameTimeId(), writeValueAsString(tuple.getT2()));
@@ -39,8 +39,8 @@ public class CloudFunctionApplication {
             });
   }
 
-  private Tuple2<Score,GameTime> playLevel(Questions questions) {
-    int points = Objects.nonNull(questions.question1()) ? 10 : -1;
+  private Tuple2<Score,GameTime> scoreLevel(Questions questions) {
+    int points = Objects.nonNull(questions.question1()) ? Integer.parseInt(questions.question1()) : -1;
     var score = new Score(questions.sessionId(), LocalDateTime.now(), LEVEL_NAME, points);
     var gameTime = new GameTime("time-" + score.sessionId(), score.sessionId(), score.level(), "end", score.time());
     return Tuples.of(score, gameTime);
