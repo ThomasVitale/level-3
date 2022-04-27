@@ -4,7 +4,7 @@ namespace: ""
 runtime: springboot
 registry: ""
 image: salaboy/level-3:latest
-imageDigest: sha256:2e8dd4dd58fd18f1ee0bb050b27a7ff9df7665818dcd86bfd29e657b36a45755
+imageDigest: sha256:6b1ff1a87062fc76b4d93141f07e79ef32bc8f4b1fd9054b49506062cfb0468e
 build: local
 git:
   url: null

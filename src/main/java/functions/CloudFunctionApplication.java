@@ -1,5 +1,6 @@
 package functions;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.SpringApplication;
@@ -11,6 +12,7 @@ import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -29,20 +31,21 @@ public class CloudFunctionApplication {
   }
 
   @Bean
-  public Function<Mono<Questions>, Mono<Score>> question(StringRedisTemplate redisTemplate) {
-    return questions -> questions
+  public Function<Mono<Answers>, Mono<GameScore>> answers(StringRedisTemplate redisTemplate) {
+    return answers -> answers
             .map(this::scoreLevel)
             .map(tuple -> {
-              redisTemplate.opsForValue().set("score-" + tuple.getT1().sessionId(), writeValueAsString(tuple.getT1()));
-              redisTemplate.opsForValue().set(tuple.getT2().gameTimeId(), writeValueAsString(tuple.getT2()));
+              redisTemplate.opsForList().rightPush("score-" + tuple.getT1().sessionId(), writeValueAsString(tuple.getT1()));
+              redisTemplate.opsForList().rightPush(tuple.getT2().gameTimeId(), writeValueAsString(tuple.getT2()));
               return tuple.getT1();
             });
   }
 
-  private Tuple2<Score,GameTime> scoreLevel(Questions questions) {
-    int points = Objects.nonNull(questions.question1()) ? Integer.parseInt(questions.question1()) : -1;
-    var score = new Score(questions.sessionId(), LocalDateTime.now(), LEVEL_NAME, points);
-    var gameTime = new GameTime("time-" + score.sessionId(), score.sessionId(), score.level(), "end", score.time());
+  private Tuple2<GameScore,GameTime> scoreLevel(Answers answers) {
+      System.out.println("Answers Counter in Level 3: " + answers.counter());
+    int points = Objects.nonNull(answers.counter()) ? answers.counter() : -1;
+    var score = new GameScore(answers.sessionId(), LocalDateTime.now(), LEVEL_NAME, points);
+    var gameTime = new GameTime("time-" + score.sessionId(), score.sessionId(), score.level(), "end", score.gameTime());
     return Tuples.of(score, gameTime);
   }
 
@@ -56,8 +59,15 @@ public class CloudFunctionApplication {
 
 }
 
-record Questions(String sessionId, String question1){}
+record Answers(String sessionId, int counter){}
 
-record Score(String sessionId, LocalDateTime time, String level, int levelScore){}
+record GameScore(@JsonProperty("SessionId")
+                 String sessionId,
+                 @JsonProperty("Time")
+                 LocalDateTime gameTime,
+                 @JsonProperty("Level")
+                 String level,
+                 @JsonProperty("LevelScore")
+                 int levelScore){}
 
 record GameTime(String gameTimeId, String sessionId, String level, String type, LocalDateTime time){}
