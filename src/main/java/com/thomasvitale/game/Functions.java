@@ -78,7 +78,7 @@ public class Functions {
         return CloudEventBuilder.v1()
                 .withId(UUID.randomUUID().toString())
                 .withSource(URI.create("https://game.thomasvitale.com"))
-                .withType(gameScore.getClass().getTypeName())
+                .withType("GameScoreEvent")
                 .withData(wrapCloudEventData(gameScore))
                 .build();
     }
