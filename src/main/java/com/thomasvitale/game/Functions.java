@@ -2,7 +2,7 @@ package com.thomasvitale.game;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.thomasvitale.game.config.GameProperties;
+import com.thomasvitale.game.config.GameEventingProperties;
 import com.thomasvitale.game.model.Answers;
 import com.thomasvitale.game.model.GameScore;
 import com.thomasvitale.game.model.GameTime;
@@ -30,15 +30,17 @@ public class Functions {
 
     private static final Logger log = LoggerFactory.getLogger(Functions.class);
     private static final String LEVEL_NAME = "level-3";
+    private final GameEventingProperties gameEventingProperties;
     private final ObjectMapper objectMapper;
     private final ReactiveStringRedisTemplate redisTemplate;
     private final WebClient webClient;
 
-    public Functions(GameProperties gameProperties, ObjectMapper objectMapper, ReactiveStringRedisTemplate redisTemplate, WebClient.Builder webClientBuilder) {
+    public Functions(GameEventingProperties gameEventingProperties, ObjectMapper objectMapper, ReactiveStringRedisTemplate redisTemplate, WebClient.Builder webClientBuilder) {
+        this.gameEventingProperties = gameEventingProperties;
         this.objectMapper = objectMapper;
         this.redisTemplate = redisTemplate;
         this.webClient = webClientBuilder
-                .baseUrl(gameProperties.brokerUri().toString())
+                .baseUrl(gameEventingProperties.brokerUri().toString())
                 .build();
     }
 
@@ -60,7 +62,7 @@ public class Functions {
     private Mono<GameScore> processLevel(Tuple2<GameScore,GameTime> tuple) {
         return redisTemplate.opsForList().rightPush("score-" + tuple.getT1().sessionId(), writeValueAsString(tuple.getT1()))
                 .then(redisTemplate.opsForList().rightPush(tuple.getT2().gameTimeId(), writeValueAsString(tuple.getT2())))
-                .then(webClient.post().uri("/").bodyValue(buildCloudEvent(tuple.getT1())).retrieve().toBodilessEntity().log())
+                .then(gameEventingProperties.enabled() ? webClient.post().uri("/").bodyValue(buildCloudEvent(tuple.getT1())).retrieve().toBodilessEntity().log() : Mono.empty())
                 .then(Mono.just(tuple.getT1()));
     }
 

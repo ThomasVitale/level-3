@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -24,6 +25,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = Level3Application.class, webEnvironment = WebEnvironment.RANDOM_PORT)
+@TestPropertySource(properties = "game.eventing.enabled=true")
 @Testcontainers
 public class Level3ApplicationTests {
 
@@ -36,7 +38,7 @@ public class Level3ApplicationTests {
 
     @DynamicPropertySource
     static void redisProperties(DynamicPropertyRegistry registry) {
-        registry.add("game.broker-uri", () -> mockWebServer.url("/").uri());
+        registry.add("game.eventing.broker-uri", () -> mockWebServer.url("/").uri());
         registry.add("spring.redis.host", () -> redis.getHost());
         registry.add("spring.redis.port", () -> redis.getMappedPort(REDIS_PORT));
     }
