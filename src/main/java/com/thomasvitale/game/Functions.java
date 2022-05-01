@@ -86,7 +86,8 @@ public class Functions {
                 .headers(httpHeaders -> httpHeaders.putAll(cloudEventHeaders))
                 .bodyValue(cloudEvent.getPayload())
                 .retrieve()
-                .toBodilessEntity();
+                .toBodilessEntity()
+                .log();
 
     }
 

@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
@@ -58,7 +60,7 @@ public class Level3ApplicationTests {
     }
 
     @Test
-    void whenAnswersSubmittedThenGameScoreReturned() {
+    void whenAnswersSubmittedThenGameScoreReturned() throws InterruptedException {
         var answers = new Answers(UUID.randomUUID().toString(), 42);
 
         var mockResponse = new MockResponse().setResponseCode(201);
@@ -76,6 +78,15 @@ public class Level3ApplicationTests {
                     assertThat(gameScore.level()).isEqualTo("level-3");
                     assertThat(gameScore.levelScore()).isEqualTo(answers.counter());
                 });
+
+        var recordedRequest = mockWebServer.takeRequest();
+        assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+        assertThat(recordedRequest.getHeader(HttpHeaders.CONTENT_TYPE)).isEqualTo(MediaType.APPLICATION_JSON_VALUE);
+        assertThat(recordedRequest.getHeader("ce-id")).isNotEmpty();
+        assertThat(recordedRequest.getHeader("ce-specversion")).isNotEmpty();
+        assertThat(recordedRequest.getHeader("ce-source")).isNotEmpty();
+        assertThat(recordedRequest.getHeader("ce-type")).isEqualTo("GameScoreEvent");
+        assertThat(recordedRequest.getBodySize()).isPositive();
     }
 
 }
