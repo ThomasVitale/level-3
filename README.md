@@ -2,7 +2,7 @@
 
 Welcome to your new Function project!
 
-This sample project contains a single function based on Spring Cloud Function: `functions.Level3Application.uppercase()`, which returns the uppercase of the data passed.
+This sample project contains a single function based on Spring Cloud Function: `Level3Application.uppercase()`, which returns the uppercase of the data passed.
 
 ## Usage
 

@@ -5,6 +5,9 @@ spring:
     host: localhost
     port: 6379
 
+game:
+  broker-uri: http://broker-ingress.knative-eventing.svc.cluster.local/default/default
+
 management:
   endpoint:
     health:
