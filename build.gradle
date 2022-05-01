@@ -9,12 +9,19 @@ group = 'com.example'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '17'
 
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
 repositories {
 	maven { url 'https://repo.spring.io/release' }
 	mavenCentral()
 }
 
 ext {
+	set('cloudEventsVersion', "2.3.0")
 	set('springCloudVersion', "2021.0.1")
 	set('testcontainersVersion', "1.16.2")
 }
@@ -25,7 +32,13 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
 	implementation 'org.springframework.cloud:spring-cloud-function-web'
 
+	implementation "io.cloudevents:cloudevents-spring:${cloudEventsVersion}"
+	implementation "io.cloudevents:cloudevents-json-jackson:${cloudEventsVersion}"
+
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'com.squareup.okhttp3:mockwebserver'
 	testImplementation 'io.projectreactor:reactor-test'
 	testImplementation 'org.testcontainers:junit-jupiter'
 }
