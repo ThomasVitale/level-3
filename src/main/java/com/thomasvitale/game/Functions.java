@@ -5,26 +5,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.thomasvitale.game.config.GameEventingProperties;
 import com.thomasvitale.game.model.Answers;
 import com.thomasvitale.game.model.GameScore;
-import com.thomasvitale.game.model.GameTime;
+import io.cloudevents.core.builder.CloudEventBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.cloud.function.cloudevent.CloudEventMessageBuilder;
-import org.springframework.cloud.function.cloudevent.CloudEventMessageUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
-import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.Message;
+import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Configuration
 public class Functions {
@@ -52,19 +47,39 @@ public class Functions {
                 .flatMap(this::processLevel);
     }
 
-    private Tuple2<GameScore, GameTime> scoreLevel(Answers answers) {
+    private GameScore scoreLevel(Answers answers) {
         log.debug("Answers counter in Level 3: {}", answers.counter());
         int points = answers.counter() > 1 ? answers.counter() : -1;
-        var gameScore = new GameScore(answers.sessionId(), LocalDateTime.now(), LEVEL_NAME, points);
-        var gameTime = new GameTime("time-" + gameScore.sessionId(), gameScore.sessionId(), gameScore.level(), "end", gameScore.gameTime());
-        return Tuples.of(gameScore, gameTime);
+        return new GameScore(answers.sessionId(), LocalDateTime.now(), LEVEL_NAME, points);
     }
 
-    private Mono<GameScore> processLevel(Tuple2<GameScore,GameTime> tuple) {
-        return redisTemplate.opsForList().rightPush("score-" + tuple.getT1().sessionId(), writeValueAsString(tuple.getT1()))
-                .then(redisTemplate.opsForList().rightPush(tuple.getT2().gameTimeId(), writeValueAsString(tuple.getT2())))
-                .then(gameEventingProperties.enabled() ? produceEvent(tuple.getT1()) : Mono.empty())
-                .then(Mono.just(tuple.getT1()));
+    private Mono<GameScore> processLevel(GameScore gameScore) {
+        return redisTemplate.opsForList().rightPush("score-" + gameScore.sessionId(), writeValueAsString(gameScore))
+                .then(publishEvent(gameScore));
+    }
+
+    private Mono<GameScore> publishEvent(GameScore gameScore) {
+        if (!gameEventingProperties.enabled()) {
+            return Mono.just(gameScore);
+        }
+
+        var cloudEvent = CloudEventBuilder.v1()
+                .withId(UUID.randomUUID().toString())
+                .withType("GameScoreEvent")
+                .withSource(URI.create("level-3.default.svc.cluster.local"))
+                .withData(writeValueAsString(gameScore).getBytes(StandardCharsets.UTF_8))
+                .withDataContentType(MediaType.APPLICATION_JSON_VALUE)
+                .withSubject(gameScore.sessionId())
+                .build();
+
+        return webClient
+                .post()
+                .bodyValue(cloudEvent)
+                .retrieve()
+                .toBodilessEntity()
+                .doOnSuccess(result -> log.info("Published event. Id: {}, type: {}, session: {}.", cloudEvent.getId(), cloudEvent.getType(), gameScore.sessionId()))
+                .doOnError(result -> log.error("Error publishing event. Cause: {}. Message: {}", result.getCause(), result.getMessage()))
+                .thenReturn(gameScore);
     }
 
     private String writeValueAsString(Object object) {
@@ -73,28 +88,6 @@ public class Functions {
         } catch (JsonProcessingException ex) {
             throw new IllegalStateException("Error when serializing Score", ex);
         }
-    }
-
-    private Mono<ResponseEntity<Void>> produceEvent(GameScore gameScore) {
-        var cloudEvent = buildCloudEvent(gameScore);
-        var cloudEventHeaders = CloudEventMessageUtils.getAttributes(cloudEvent).entrySet()
-                .stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> List.of(e.getValue().toString())));
-
-        return webClient
-                .post()
-                .headers(httpHeaders -> httpHeaders.putAll(cloudEventHeaders))
-                .bodyValue(cloudEvent.getPayload())
-                .retrieve()
-                .toBodilessEntity()
-                .log();
-
-    }
-
-    private Message<GameScore> buildCloudEvent(GameScore gameScore) {
-        return CloudEventMessageBuilder.withData(gameScore)
-                .setType("GameScoreEvent")
-                .build();
     }
 
 }
