@@ -1,58 +1,67 @@
-# LEVEL 3
+# Eventing Game - Level 3
 
-Welcome to your new Function project!
+This is level 3 of a game intended to demonstrate serverless and event-driven features on Kubernetes, using Knative and CloudEvents.
 
-This sample project contains a single function based on Spring Cloud Function: `Level3Application.uppercase()`, which returns the uppercase of the data passed.
+* For more information on the game, visit this [page](https://github.com/salaboy/from-monolith-to-k8s/tree/main/game).
+* For instructions on deploying the entire system, visit this [page](https://github.com/ThomasVitale/eventing-game).
+
+Level 3 is a Spring Boot project relying on Spring Cloud Function, Spring Native, and the CloudEvents Java SDK. The project
+has been initialized using the Knative [func](https://github.com/knative-sandbox/kn-plugin-func) plugin.
 
 ## Usage
 
 ```shell
-$ http http://test.default.34.116.142.221.sslip.io sessionId="game-blahblah" question1="Awesome"
+$ http <url> sessionId="game-blahblah" counter=42
 
 HTTP/1.1 200 OK
 Content-Length: 98
 Content-Type: application/json
 accept-encoding: gzip, deflate
 connection: keep-alive
-uri: http://localhost:8080/
 user-agent: HTTPie/3.1.0
 
 {
     "level": "level-3",
     "levelScore": 10,
     "sessionId": "game-blahblah",
-    "time": "2022-04-19T11:40:46.04108"
+    "gameTime": "2022-04-19T11:40:46.04108"
 }
 ```
 
 ## Local execution
 
-Make sure that `Java 17 SDK` is installed.
+Make sure you have a Java 17 distribution installed.
 
-To start server locally run `./gradlew bootRun`.
-The command starts http server and automatically watches for changes of source code.
-If source code changes the change will be propagated to running server. It also opens debugging port `5005`
-so a debugger can be attached if needed.
+You can run the application locally as follows.
 
-To run tests locally run `./gradlew test`.
+```shell
+./gradlew bootRun
+```
+
+To run the tests run the following command.
+
+```shell
+./gradlew test
+```
 
 ## The `func` CLI
 
-It's recommended to set `FUNC_REGISTRY` environment variable.
+It's recommended to set the `FUNC_REGISTRY` environment variable.
 
 ```shell script
-# replace ~/.bashrc by your shell rc file
-# replace docker.io/johndoe with your registry
-export FUNC_REGISTRY=docker.io/johndoe
-echo "export FUNC_REGISTRY=docker.io/johndoe" >> ~/.bashrc
+export FUNC_REGISTRY=<registry>/<username>
+echo "export FUNC_REGISTRY=<registry>/<username>" >> ~/.bashrc
 ```
+
+where `<registry>` is a container registry URI (for example, `ghcr.io`) and `username` is your account name on
+that registry.
 
 ### Building
 
 This command builds an OCI image for the function. By default, this will build a GraalVM native image.
 
-```shell script
-func build -v                  # build native image
+```shell
+func build -v
 ```
 
 **Note**: If you want to disable the native build, you need to edit the `func.yaml` file and
@@ -65,10 +74,9 @@ buildEnvs:
 
 ### Running
 
-This command runs the func locally in a container
-using the image created above.
+This command runs the func locally in a container using the image created above.
 
-```shell script
+```shell
 func run
 ```
 
@@ -76,8 +84,8 @@ func run
 
 This command will build and deploy the function into cluster.
 
-```shell script
-func deploy -v # also triggers build
+```shell
+func deploy -v
 ```
 
 ## Function invocation
@@ -101,18 +109,10 @@ If you use `kn` then you can set the url by:
 export URL=$(kn service describe $(basename $PWD) -ourl)
 ```
 
-### cURL
+Then, call the function as follows.
 
 ```shell script
-curl -v "$URL/uppercase" \
-  -H "Content-Type:text/plain" \
-  -d "$(whoami)"
-```
-
-### HTTPie
-
-```shell script
-echo "$(whoami)" | http -v "$URL/uppercase"
+http $URL sessionId="game-blahblah" counter=42
 ```
 
 ## Cleanup
