@@ -50,7 +50,7 @@ public class Functions {
     private GameScore scoreLevel(Answers answers) {
         log.debug("Answers counter in Level 3: {}", answers.counter());
         int points = answers.counter() > 1 ? answers.counter() : -1;
-        return new GameScore(answers.sessionId(), LocalDateTime.now(), LEVEL_NAME, points);
+        return new GameScore(answers.player(), answers.sessionId(), LocalDateTime.now(), LEVEL_NAME, points);
     }
 
     private Mono<GameScore> processLevel(GameScore gameScore) {

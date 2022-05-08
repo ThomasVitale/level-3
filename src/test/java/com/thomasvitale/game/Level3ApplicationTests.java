@@ -61,7 +61,7 @@ public class Level3ApplicationTests {
 
     @Test
     void whenAnswersSubmittedThenGameScoreReturned() throws InterruptedException {
-        var answers = new Answers(UUID.randomUUID().toString(), 42);
+        var answers = new Answers("jon-snow", UUID.randomUUID().toString(), 42);
 
         var mockResponse = new MockResponse().setResponseCode(201);
         mockWebServer.enqueue(mockResponse);
@@ -73,6 +73,7 @@ public class Level3ApplicationTests {
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(GameScore.class).value(gameScore -> {
+                    assertThat(gameScore.player()).isEqualTo(answers.player());
                     assertThat(gameScore.sessionId()).isEqualTo(answers.sessionId());
                     assertThat(gameScore.gameTime()).isNotNull();
                     assertThat(gameScore.level()).isEqualTo("level-3");
